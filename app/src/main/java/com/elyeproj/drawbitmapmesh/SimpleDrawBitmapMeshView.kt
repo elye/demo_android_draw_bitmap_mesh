@@ -12,7 +12,7 @@ import android.view.MotionEvent.ACTION_MOVE
 import android.view.MotionEvent.ACTION_UP
 
 
-class DrawBitmapMeshView @JvmOverloads constructor(
+class SimpleDrawBitmapMeshView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0,
@@ -45,7 +45,11 @@ class DrawBitmapMeshView @JvmOverloads constructor(
                 firstX, secondY, secondX, secondY, thirdX, secondY,
                 firstX, thirdY, secondX, thirdY, thirdX, thirdY),
             0,
-            null, 0, null)
+            intArrayOf(
+                Color.RED, Color.GREEN, Color.BLUE,
+                Color.CYAN, Color.MAGENTA, Color.DKGRAY,
+                Color.BLACK, Color.YELLOW, Color.WHITE),
+            0, null)
 
         drawMeshLines(canvas)
     }
