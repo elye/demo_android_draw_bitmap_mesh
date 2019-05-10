@@ -31,6 +31,15 @@ class ProjectResources(private val resources: Resources) {
         }
     }
 
+    val paintDark by lazy {
+        getBasePaint().apply {
+            color = Color.BLACK
+            alpha = 128
+            strokeWidth = resources.dpToPx(4)
+            textSize = resources.dpToPx(30)
+        }
+    }
+
     private fun getBasePaint(): Paint {
         return Paint().apply {
             style = Paint.Style.STROKE

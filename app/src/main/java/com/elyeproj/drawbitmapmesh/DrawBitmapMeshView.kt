@@ -1,15 +1,14 @@
 package com.elyeproj.drawbitmapmesh
 
 import android.content.Context
-import android.content.res.Resources
-import android.graphics.*
+import android.graphics.BitmapFactory
+import android.graphics.Canvas
 import android.util.AttributeSet
-import android.util.TypedValue
 import android.view.KeyEvent.ACTION_DOWN
-import android.view.View
 import android.view.MotionEvent
 import android.view.MotionEvent.ACTION_MOVE
 import android.view.MotionEvent.ACTION_UP
+import android.view.View
 
 
 class DrawBitmapMeshView @JvmOverloads constructor(
@@ -19,57 +18,93 @@ class DrawBitmapMeshView @JvmOverloads constructor(
     defStyleRes: Int = 0
 ) : View(context, attrs, defStyleAttr, defStyleRes) {
 
+    companion object {
+        const val MESH_WIDTH = 6
+        const val MESH_HEIGHT = 10
+    }
+
     private val bitmap by lazy {
         BitmapFactory.decodeResource(resources, R.drawable.person_picture)
     }
 
-    private val firstX by lazy { 0f + paddingLeft }
-    private val firstY by lazy { 0f + paddingTop }
-    private var secondX = 0f
-    private var secondY = 0f
-    private val thirdX by lazy { width.toFloat() - paddingRight }
-    private val thirdY by lazy { height.toFloat() - paddingBottom }
+    private lateinit var coordinates: List<Pair<Float, Float>>
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
-        secondX = width/2f
-        secondY = height/2f
+        coordinates = generateCoordinate(MESH_WIDTH, MESH_HEIGHT, width, height, paddingStart, paddingEnd, paddingTop, paddingBottom)
     }
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
-        canvas.drawBitmapMesh(bitmap, 2, 2,
-            floatArrayOf(
-                firstX, firstY, secondX, firstY, thirdX, firstY,
-                firstX, secondY, secondX, secondY, thirdX, secondY,
-                firstX, thirdY, secondX, thirdY, thirdX, thirdY),
+        canvas.drawBitmapMesh(bitmap, MESH_WIDTH, MESH_HEIGHT, coordinates.flatMap { listOf(it.first, it.second) }.toFloatArray(),
             0,
             null, 0, null)
 
-        drawMeshLines(canvas)
+        drawCoordinates(canvas)
+        drawLines(canvas)
     }
 
-    private fun drawMeshLines(canvas: Canvas) {
-        canvas.drawRect(firstX, firstY, firstX, thirdY, projectResources.paintLight)
-        canvas.drawLine(secondX, firstY, secondX, thirdY, projectResources.paintLight)
-        canvas.drawLine(thirdX, firstY, thirdX, thirdY, projectResources.paintLight)
-
-        canvas.drawLine(firstX, firstY, thirdX, firstY, projectResources.paintLight)
-        canvas.drawLine(firstX, secondY, thirdX, secondY, projectResources.paintLight)
-        canvas.drawLine(firstX, thirdY, thirdX, thirdY, projectResources.paintLight)
+    private fun drawCoordinates(canvas: Canvas) {
+        coordinates.forEach {
+            canvas.drawPoint(it.first, it.second, projectResources.paintDark)
+        }
     }
+
+    private fun drawLines(canvas: Canvas) {
+
+        coordinates.groupBy { it.first }.forEach {
+            drawLines(canvas, it.value)
+        }
+
+        coordinates.groupBy { it.second }.forEach {
+            drawLines(canvas, it.value)
+        }
+    }
+
+    private fun drawLines(canvas: Canvas, coordinates: List<Pair<Float, Float>>) {
+        var currentCoordinate : Pair<Float, Float>? = null
+
+        coordinates.forEach {
+            currentCoordinate?.let{ currentCoordinate ->
+                canvas.drawLine(currentCoordinate.first, currentCoordinate.second,
+                    it.first, it.second, projectResources.paintLight)
+            }
+            currentCoordinate = it
+        }
+    }
+
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
 
         when (event.action) {
             ACTION_DOWN, ACTION_MOVE, ACTION_UP -> {
-                secondX = event.x
-                secondY = event.y
                 invalidate()
             }
         }
 
         return true
+    }
+
+    private fun generateCoordinate(
+        col: Int, row: Int, width: Int, height: Int,
+        paddingStart: Int = 0, paddingEnd: Int = 0,
+        paddingTop: Int = 0, paddingBottom: Int = 0
+    ): List<Pair<Float, Float>> {
+
+        val widthSlice = (width - (paddingStart + paddingEnd)) / (col)
+        val heightSlice = (height - (paddingTop + paddingBottom)) / (row)
+
+        val coordinates = mutableListOf<Pair<Float, Float>>()
+
+        for (y in 0 .. row) {
+            for (x in 0 .. col) {
+                coordinates.add(Pair(
+                    (x * widthSlice + paddingStart).toFloat(),
+                    (y * heightSlice + paddingTop).toFloat()))
+            }
+        }
+
+        return coordinates
     }
 }
