@@ -53,27 +53,27 @@ class DrawBitmapMeshView @JvmOverloads constructor(
 
     private fun drawLines(canvas: Canvas) {
 
-        coordinates.groupBy { it.first }.forEach {
-            drawLines(canvas, it.value)
-        }
-
-        coordinates.groupBy { it.second }.forEach {
-            drawLines(canvas, it.value)
-        }
-    }
-
-    private fun drawLines(canvas: Canvas, coordinates: List<Pair<Float, Float>>) {
-        var currentCoordinate : Pair<Float, Float>? = null
-
-        coordinates.forEach {
-            currentCoordinate?.let{ currentCoordinate ->
-                canvas.drawLine(currentCoordinate.first, currentCoordinate.second,
-                    it.first, it.second, projectResources.paintLight)
+        coordinates.forEachIndexed { index, pair ->
+            // Draw horizontal line with next column
+            if ( ((index + 1) % (MESH_WIDTH + 1)) != 0 ) {
+                val nextCoordinate = coordinates[index + 1]
+                drawLine(canvas, pair, nextCoordinate)
             }
-            currentCoordinate = it
+
+            // Draw horizontal line with next row
+            if ( ((index < (MESH_WIDTH + 1) * MESH_HEIGHT))) {
+                val nextCoordinate = coordinates[index + MESH_WIDTH + 1]
+                drawLine(canvas, pair, nextCoordinate)
+            }
         }
     }
 
+    private fun drawLine(canvas: Canvas, pair: Pair<Float, Float>, nextCoordinate: Pair<Float, Float>) {
+        canvas.drawLine(pair.first, pair.second,
+            nextCoordinate.first, nextCoordinate.second,
+            projectResources.paintLight
+        )
+    }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
 
