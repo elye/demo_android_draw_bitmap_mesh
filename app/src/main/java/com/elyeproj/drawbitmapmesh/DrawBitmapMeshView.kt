@@ -5,10 +5,11 @@ import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.util.AttributeSet
 import android.view.KeyEvent.ACTION_DOWN
+import android.view.KeyEvent.ACTION_UP
 import android.view.MotionEvent
 import android.view.MotionEvent.ACTION_MOVE
-import android.view.MotionEvent.ACTION_UP
 import android.view.View
+import kotlin.math.pow
 
 
 class DrawBitmapMeshView @JvmOverloads constructor(
@@ -78,12 +79,16 @@ class DrawBitmapMeshView @JvmOverloads constructor(
     override fun onTouchEvent(event: MotionEvent): Boolean {
 
         when (event.action) {
-            ACTION_DOWN, ACTION_MOVE, ACTION_UP -> {
+            ACTION_DOWN, ACTION_UP, ACTION_MOVE -> {
+                val sorted = coordinates.sortedBy { (it.first - event.x).pow(2) + (it.second - event.y).pow(2) }
+                val selectedIndex = coordinates.indexOf(sorted[0])
+                coordinates = coordinates.mapIndexed { index, pair -> if (index == selectedIndex) (event.x to event.y) else pair }
                 invalidate()
+                return true
             }
         }
 
-        return true
+        return false
     }
 
     private fun generateCoordinate(
