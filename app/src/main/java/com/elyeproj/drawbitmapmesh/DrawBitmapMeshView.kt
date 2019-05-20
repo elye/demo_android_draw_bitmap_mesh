@@ -3,6 +3,7 @@ package com.elyeproj.drawbitmapmesh
 import android.content.Context
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
+import android.graphics.Color
 import android.util.AttributeSet
 import android.view.KeyEvent.ACTION_DOWN
 import android.view.KeyEvent.ACTION_UP
@@ -10,6 +11,7 @@ import android.view.MotionEvent
 import android.view.MotionEvent.ACTION_MOVE
 import android.view.View
 import kotlin.math.pow
+import kotlin.random.Random
 
 
 class DrawBitmapMeshView @JvmOverloads constructor(
@@ -22,25 +24,67 @@ class DrawBitmapMeshView @JvmOverloads constructor(
     companion object {
         const val MESH_WIDTH = 6
         const val MESH_HEIGHT = 10
+        const val FULL_COLOR = 256
+        const val HALF_COLOR = 128
+        private val colorRandom = Random(0)
+
     }
+
+    private var meshWidth = MESH_WIDTH
+    private var mestHeight = MESH_HEIGHT
+    private var hasColor = false
+    private var isTransparent = false
 
     private val bitmap by lazy {
         BitmapFactory.decodeResource(resources, R.drawable.person_picture)
     }
 
     private lateinit var coordinates: List<Pair<Float, Float>>
+    private var colors: List<Int>? = null
+
+    fun setup(column: Int, row: Int, randomColor: Boolean, transparent: Boolean) {
+        meshWidth = column
+        mestHeight = row
+        hasColor = randomColor
+        isTransparent = transparent
+        generateCoordinates()
+        invalidate()
+    }
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
-        coordinates = generateCoordinate(MESH_WIDTH, MESH_HEIGHT, width, height, paddingStart, paddingEnd, paddingTop, paddingBottom)
+        generateCoordinates()
+    }
+
+    private fun generateCoordinates() {
+        coordinates = generateCoordinate(
+            meshWidth,
+            mestHeight,
+            width,
+            height,
+            paddingStart,
+            paddingEnd,
+            paddingTop,
+            paddingBottom
+        )
+
+        if (hasColor) {
+                colors = (1..(meshWidth + 1) * (mestHeight + 1)).map {
+                        Color.argb(if (isTransparent) HALF_COLOR else FULL_COLOR - 1,
+                        colorRandom.nextInt(FULL_COLOR),
+                        colorRandom.nextInt(FULL_COLOR),
+                        colorRandom.nextInt(FULL_COLOR))
+                }
+        }
     }
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
-        canvas.drawBitmapMesh(bitmap, MESH_WIDTH, MESH_HEIGHT, coordinates.flatMap { listOf(it.first, it.second) }.toFloatArray(),
-            0,
-            null, 0, null)
+        canvas.drawBitmapMesh(
+            bitmap, meshWidth, mestHeight, coordinates.flatMap { listOf(it.first, it.second) }.toFloatArray(),
+            0, colors?.toIntArray(), 0, null
+        )
 
         drawCoordinates(canvas)
         drawLines(canvas)
@@ -56,21 +100,22 @@ class DrawBitmapMeshView @JvmOverloads constructor(
 
         coordinates.forEachIndexed { index, pair ->
             // Draw horizontal line with next column
-            if ( ((index + 1) % (MESH_WIDTH + 1)) != 0 ) {
+            if (((index + 1) % (meshWidth + 1)) != 0) {
                 val nextCoordinate = coordinates[index + 1]
                 drawLine(canvas, pair, nextCoordinate)
             }
 
             // Draw horizontal line with next row
-            if ( ((index < (MESH_WIDTH + 1) * MESH_HEIGHT))) {
-                val nextCoordinate = coordinates[index + MESH_WIDTH + 1]
+            if (((index < (meshWidth + 1) * mestHeight))) {
+                val nextCoordinate = coordinates[index + meshWidth + 1]
                 drawLine(canvas, pair, nextCoordinate)
             }
         }
     }
 
     private fun drawLine(canvas: Canvas, pair: Pair<Float, Float>, nextCoordinate: Pair<Float, Float>) {
-        canvas.drawLine(pair.first, pair.second,
+        canvas.drawLine(
+            pair.first, pair.second,
             nextCoordinate.first, nextCoordinate.second,
             projectResources.paintLight
         )
@@ -82,7 +127,8 @@ class DrawBitmapMeshView @JvmOverloads constructor(
             ACTION_DOWN, ACTION_UP, ACTION_MOVE -> {
                 val sorted = coordinates.sortedBy { (it.first - event.x).pow(2) + (it.second - event.y).pow(2) }
                 val selectedIndex = coordinates.indexOf(sorted[0])
-                coordinates = coordinates.mapIndexed { index, pair -> if (index == selectedIndex) (event.x to event.y) else pair }
+                coordinates =
+                    coordinates.mapIndexed { index, pair -> if (index == selectedIndex) (event.x to event.y) else pair }
                 invalidate()
                 return true
             }
@@ -102,11 +148,14 @@ class DrawBitmapMeshView @JvmOverloads constructor(
 
         val coordinates = mutableListOf<Pair<Float, Float>>()
 
-        for (y in 0 .. row) {
-            for (x in 0 .. col) {
-                coordinates.add(Pair(
-                    (x * widthSlice + paddingStart).toFloat(),
-                    (y * heightSlice + paddingTop).toFloat()))
+        for (y in 0..row) {
+            for (x in 0..col) {
+                coordinates.add(
+                    Pair(
+                        (x * widthSlice + paddingStart).toFloat(),
+                        (y * heightSlice + paddingTop).toFloat()
+                    )
+                )
             }
         }
 

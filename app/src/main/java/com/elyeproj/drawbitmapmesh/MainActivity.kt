@@ -7,6 +7,10 @@ import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {
 
+    companion object {
+        const val SETTING_DIALOG_TAG = "dialog"
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         projectResources = ProjectResources(resources)
@@ -17,7 +21,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         btn_draw.setOnClickListener {
-            startActivity(Intent(this, DrawBitmapMeshActivity::class.java))
+            SettingDialog().show(supportFragmentManager.beginTransaction(), SETTING_DIALOG_TAG)
         }
     }
 }
